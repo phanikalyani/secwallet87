@@ -3,27 +3,23 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.open = void 0;
-const child_process_1 = require("child_process");
-const os_1 = __importDefault(require("os"));
-function open(filePath) {
-    let command;
-    switch (os_1.default.platform()) {
-        case "win32":
-            command = "start";
-            break;
-        case "darwin":
-            command = "open";
-            break;
-        default:
-            command = "xdg-open";
+exports.writeVisualization = void 0;
+const fs_extra_1 = require("fs-extra");
+const plugins_1 = require("hardhat/plugins");
+const path_1 = __importDefault(require("path"));
+async function writeVisualization(visualizationPayload, { cacheDir }) {
+    const templateDir = path_1.default.join(require.resolve("@nomicfoundation/ignition-ui/package.json"), "../dist");
+    const templateDirExists = await (0, fs_extra_1.pathExists)(templateDir);
+    if (!templateDirExists) {
+        throw new plugins_1.NomicLabsHardhatPluginError("@nomicfouncation/hardhat-ignition", `Unable to find template directory: ${templateDir}`);
     }
-    try {
-        (0, child_process_1.execSync)(`${command} ${filePath}`, { stdio: "ignore" });
-    }
-    catch {
-        // do nothing
-    }
+    const visualizationDir = path_1.default.join(cacheDir, "visualization");
+    await (0, fs_extra_1.ensureDir)(visualizationDir);
+    const indexHtml = await (0, fs_extra_1.readFile)(path_1.default.join(templateDir, "index.html"));
+    const updatedHtml = indexHtml
+        .toString()
+        .replace('{ "unloaded": true }', JSON.stringify(visualizationPayload));
+    await (0, fs_extra_1.writeFile)(path_1.default.join(visualizationDir, "index.html"), updatedHtml);
 }
-exports.open = open;
-//# sourceMappingURL=open.js.map
+exports.writeVisualization = writeVisualization;
+//# sourceMappingURL=write-visualization.js.map
